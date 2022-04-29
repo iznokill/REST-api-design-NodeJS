@@ -31,10 +31,10 @@ export const signup = async (req, res) => {
   }
   const user = User.create({
     email,
-    password: User.hashPassword(password)
+    password: await User.hashPassword(password)
   })
   const token = newToken(user)
-  res.send({ token })
+  res.status(201).send({ token })
 }
 
 export const signin = async (req, res) => {
@@ -56,6 +56,12 @@ export const signin = async (req, res) => {
 
 export const protect = async (req, res, next) => {
   const token = req.headers.authorization
-  if (!token) return res.status(401).send({ message: 'No token provided' })
-  next()
+  if (!token) return res.status(401).end({ message: 'No token provided' })
+  try {
+    const payload = await verifyToken(token.slice(7))
+    req.user = payload
+    next()
+  } catch (err) {
+    res.status(401).end({ message: 'Invalid token' })
+  }
 }
